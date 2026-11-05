@@ -1,0 +1,53 @@
+MARZADURI SECURE MESSAGES - LICENZA D'USO DEL CODICE SORGENTE
+Copyright (c) 2026 Marco Roberto Maria Marzaduri. Tutti i diritti riservati.
+
+Il codice sorgente contenuto in questo archivio ("Software") è un'opera
+dell'ingegno protetta dalla Legge 22 aprile 1941, n. 633 (artt. 1, 2 n. 8 e
+64-bis e ss.). La paternità e la data sono attestate dalla firma digitale e
+dalla marca temporale qualificata contenute nella cartella "attestazione".
+
+Il Software è pubblicato al solo scopo di permettere a chiunque di verificare
+come funziona il servizio https://marzadurisecure.com e che il gestore non può
+leggere i messaggi.
+
+1. È CONSENTITO, gratuitamente e senza bisogno di autorizzazione:
+   a) leggere, scaricare ed esaminare il Software;
+   b) eseguirlo, compilarlo o analizzarlo sui propri dispositivi al solo fine
+      di verificarne la sicurezza e la corrispondenza con i file pubblicati
+      su https://marzadurisecure.com;
+   c) usare il file "marzaduri-secure-offline.html" per accedere al servizio
+      https://marzadurisecure.com;
+   d) citare brevi estratti del Software in analisi, recensioni, studi o
+      segnalazioni di sicurezza, indicando la fonte;
+   e) segnalare vulnerabilità all'indirizzo security@marzadurisecure.com.
+
+2. NON È CONSENTITO, senza il consenso scritto del titolare:
+   a) copiare, modificare o redistribuire il Software, in tutto o in parte;
+   b) usare il Software, o opere da esso derivate, per offrire a terzi un
+      servizio, gratuito o a pagamento;
+   c) qualsiasi uso commerciale del Software;
+   d) usare il nome "Marzaduri Secure Messages" o il nome "Marzaduri" per
+      prodotti o servizi non provenienti dal titolare.
+
+3. Restano salvi i diritti che la legge riconosce in ogni caso all'utente
+   (artt. 64-ter e 64-quater L. 633/1941).
+
+4. Il Software è fornito "così com'è", senza garanzie di alcun tipo, nei
+   limiti consentiti dalla legge.
+
+5. La presente licenza è regolata dalla legge italiana.
+
+Richieste di autorizzazione: marco@marzaduri.it
+
+---------------------------------------------------------------------------
+ENGLISH SUMMARY (the Italian text prevails)
+
+Copyright (c) 2026 Marco Roberto Maria Marzaduri. All rights reserved.
+This source code is published only so that anyone can verify how
+https://marzadurisecure.com works and that the operator cannot read messages.
+You may read, download, run and analyse it for verification purposes, use the
+offline client to access the service, quote short excerpts with attribution
+and report vulnerabilities to security@marzadurisecure.com.
+You may not copy, modify, redistribute, run it as a service for others or use
+it commercially without written permission. Provided "as is", without warranty.
+Governed by Italian law.
