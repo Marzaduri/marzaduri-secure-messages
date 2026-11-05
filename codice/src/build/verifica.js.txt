@@ -1,0 +1,60 @@
+(() => {
+  'use strict';
+  // Impronte ufficiali, inserite al momento della pubblicazione (devono coincidere con quelle dell'archivio pubblico).
+  const REPO = '';
+  const UFFICIALI = [
+  {
+    "nome": "Pagina principale",
+    "percorso": "/",
+    "sha256": "4c4ad365c979b62c16a00084d42f0042fd6139cbcf238e814ce5b1a954e4deef"
+  },
+  {
+    "nome": "Programma (app.js)",
+    "percorso": "/app.js",
+    "sha256": "d53db2480a7650cfaf7affba618f188dc4b61e130f23ab1f84e5e47ef8d2614b"
+  },
+  {
+    "nome": "Grafica (style.css)",
+    "percorso": "/style.css",
+    "sha256": "6021dad6851591accd0d1f07134bae59434d0b57cfe7755be79712d942250480"
+  },
+  {
+    "nome": "Versione offline",
+    "percorso": "/marzaduri-secure-offline.html",
+    "sha256": "66fb8b81f436c893b2f25e027db9fcd25eb5d8c49e107ed836a9d29fb205d95c"
+  }
+];
+
+  const repo = document.getElementById('repo');
+  if (REPO.startsWith('https://')) {
+    const a = document.createElement('a');
+    a.href = REPO; a.rel = 'noopener'; a.textContent = REPO;
+    repo.textContent = 'Archivio pubblico: '; repo.appendChild(a);
+  } else {
+    repo.textContent = 'Archivio pubblico del codice: in pubblicazione.';
+  }
+
+  async function sha256(path) {
+    const r = await fetch(path, { cache: 'no-store', credentials: 'omit' });
+    const b = await r.arrayBuffer();
+    const d = await crypto.subtle.digest('SHA-256', b);
+    return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, '0')).join('');
+  }
+
+  const tbody = document.getElementById('hash-rows');
+  UFFICIALI.forEach(async (f) => {
+    const tr = document.createElement('tr');
+    const c1 = document.createElement('td'); c1.textContent = f.nome;
+    const c2 = document.createElement('td'); c2.className = 'hash'; c2.textContent = f.sha256;
+    const c3 = document.createElement('td'); c3.textContent = 'calcolo…';
+    tr.append(c1, c2, c3); tbody.appendChild(tr);
+    try {
+      const h = await sha256(f.percorso);
+      const ok = h === f.sha256;
+      c3.textContent = ok ? '✓ corrisponde' : '✗ diversa: ' + h;
+      c3.className = ok ? 'ok' : 'bad';
+    } catch (e) {
+      c3.textContent = 'non calcolabile';
+    }
+  });
+})();

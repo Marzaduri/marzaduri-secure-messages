@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marzaduri Secure Messages — messaggi cifrati che si autodistruggono</title>
+<meta name="description" content="Invia un messaggio cifrato end-to-end che si autodistrugge alla prima lettura. Il server non vede mai il contenuto né la chiave.">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0b0e12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e12'/%3E%3Cpath d='M11 14v-3a5 5 0 0 1 10 0v3' stroke='%2346e3a6' stroke-width='2.4' fill='none'/%3E%3Crect x='8' y='14' width='16' height='11' rx='2.5' fill='%2346e3a6'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #0b0e12;
+  --panel: #11161c;
+  --panel-2: #161c24;
+  --line: #232b36;
+  --text: #e7ecf2;
+  --muted: #8d99a8;
+  --accent: #46e3a6;
+  --accent-ink: #062418;
+  --danger: #ff6b5e;
+  --warn: #f2c14e;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(70, 227, 166, .07), transparent 60%),
+    linear-gradient(var(--bg), var(--bg));
+  color: var(--text);
+  font: 16px/1.6 var(--sans);
+}
+a { color: var(--accent); }
+
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  max-width: 760px; width: 100%; margin: 0 auto; padding: 1.4rem 1.25rem .5rem;
+}
+.brand { display: flex; align-items: center; gap: .6rem; color: var(--text); text-decoration: none; font-size: 1.02rem; letter-spacing: .01em; }
+.brand svg { width: 30px; height: 30px; }
+.brand .shackle { fill: none; stroke: var(--accent); stroke-width: 2.4; }
+.brand .body { fill: var(--accent); }
+.brand b { font-weight: 650; }
+.badge {
+  font: 500 .72rem/1 var(--mono); color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px; padding: .45rem .7rem; white-space: nowrap;
+}
+
+main { flex: 1; max-width: 760px; width: 100%; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: clamp(1.4rem, 4vw, 2.4rem);
+  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, .8);
+}
+.eyebrow {
+  margin: 0 0 .6rem; font: 600 .75rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+.eyebrow.ok { color: var(--accent); }
+.eyebrow.bad { color: var(--danger); }
+h1 { margin: 0 0 .8rem; font-size: clamp(1.8rem, 5.5vw, 2.6rem); line-height: 1.1; letter-spacing: -.02em; font-weight: 700; }
+h2 { font-size: 1.15rem; margin: 0 0 1rem; }
+h3 { font-size: .95rem; margin: 1.2rem 0 .3rem; }
+.lead { color: #c3ccd7; margin: 0 0 1.6rem; max-width: 58ch; }
+
+label { display: block; font-size: .85rem; color: var(--muted); margin: 0 0 .4rem; }
+.opt { color: #5f6b79; }
+textarea, input, select {
+  width: 100%; color: var(--text); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 12px; padding: .85rem 1rem; font: inherit;
+  transition: border-color .15s, box-shadow .15s;
+}
+textarea { min-height: 190px; resize: vertical; font-family: var(--mono); font-size: .92rem; line-height: 1.55; }
+textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(70, 227, 166, .15); }
+.counter { text-align: right; font: .75rem var(--mono); color: #5f6b79; margin: .35rem 0 1.1rem; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.4rem; }
+.field { margin-bottom: 1.1rem; }
+.row .field { margin-bottom: 0; }
+
+button, .ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  font: 600 1rem/1 var(--sans); border-radius: 12px; cursor: pointer; text-decoration: none;
+  padding: 1rem 1.4rem; border: 1px solid transparent; transition: transform .08s, filter .15s, background .15s;
+}
+button:active { transform: translateY(1px); }
+button:disabled { opacity: .6; cursor: progress; }
+.primary { width: 100%; background: var(--accent); color: var(--accent-ink); }
+.primary:hover { filter: brightness(1.08); }
+.primary.small { width: auto; padding: .8rem 1.1rem; font-size: .92rem; }
+.primary.danger { background: var(--danger); color: #2a0703; }
+.ghost { background: transparent; color: var(--text); border-color: var(--line); margin-top: 1.4rem; }
+.ghost:hover { border-color: #3a4554; }
+
+.linkbox { display: flex; gap: .6rem; margin-bottom: 1rem; }
+.linkbox input { font-family: var(--mono); font-size: .82rem; color: var(--accent); }
+.facts { padding-left: 1.1rem; color: #c3ccd7; margin: 1rem 0 0; }
+.facts li { margin-bottom: .35rem; }
+
+.note { border-radius: 12px; padding: .85rem 1rem; font-size: .9rem; margin: 0 0 1rem; }
+.note.warn { background: rgba(242, 193, 78, .08); border: 1px solid rgba(242, 193, 78, .3); color: #f6d98e; }
+.note.burned { background: rgba(70, 227, 166, .07); border: 1px solid rgba(70, 227, 166, .25); color: #9cefc9; }
+.error { color: var(--danger); background: rgba(255, 107, 94, .08); border: 1px solid rgba(255, 107, 94, .3); border-radius: 12px; padding: .75rem 1rem; font-size: .9rem; }
+
+pre#plain {
+  white-space: pre-wrap; word-break: break-word; margin: 0 0 1.2rem;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 1.1rem 1.2rem; font: .95rem/1.6 var(--mono); max-height: 60vh; overflow: auto;
+}
+.actions { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
+.actions .ghost { margin-top: 0; }
+
+.how { margin-top: 2.6rem; padding: 0 .2rem; }
+.how ol { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 1rem; }
+.how li { counter-increment: s; position: relative; padding-left: 2.6rem; color: #b7c1cd; font-size: .95rem; }
+.how li::before {
+  content: counter(s); position: absolute; left: 0; top: .05rem; width: 1.75rem; height: 1.75rem; border-radius: 50%;
+  display: grid; place-items: center; font: 600 .8rem var(--mono); color: var(--accent); border: 1px solid rgba(70, 227, 166, .4);
+}
+.how b { color: var(--text); }
+code { font-family: var(--mono); color: var(--accent); }
+.small-print { font-size: .85rem; color: var(--muted); margin-top: 1.2rem; }
+
+.topnav { display: flex; align-items: center; gap: .7rem; }
+.studio-link {
+  font: 600 .82rem/1 var(--sans); color: var(--text); text-decoration: none; white-space: nowrap;
+  border: 1px solid var(--line); border-radius: 999px; padding: .5rem .8rem;
+}
+.studio-link:hover { border-color: var(--accent); color: var(--accent); }
+
+.uses, .tips, .faq, .about { margin-top: 2.4rem; padding: 0 .2rem; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+.chips li { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: .45rem .85rem; font-size: .88rem; color: #c3ccd7; }
+.tips ul { margin: 0; padding-left: 1.1rem; color: #b7c1cd; font-size: .95rem; display: grid; gap: .7rem; }
+.tips b { color: var(--text); }
+.faq details { border-bottom: 1px solid var(--line); padding: .9rem 0; }
+.faq details:first-of-type { border-top: 1px solid var(--line); }
+.faq summary { cursor: pointer; font-weight: 600; color: var(--text); }
+.faq details p { margin: .6rem 0 0; color: #b7c1cd; font-size: .93rem; }
+.about {
+  display: flex; align-items: center; justify-content: space-between; gap: 1.2rem; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 1.4rem 1.5rem;
+}
+.about h2 { margin: 0 0 .3rem; }
+.about p { margin: 0; color: #b7c1cd; font-size: .93rem; max-width: 46ch; }
+.about .primary.small { text-decoration: none; }
+
+.legal { margin-top: 2rem; border-top: 1px solid var(--line); padding-top: 1rem; color: var(--muted); font-size: .85rem; }
+.legal summary { cursor: pointer; color: #b7c1cd; }
+.legal p { margin: .4rem 0; }
+
+footer { text-align: center; padding: 1.5rem 1rem 2rem; color: #5f6b79; font-size: .82rem; }
+footer a { color: var(--muted); }
+
+@media (max-width: 600px) {
+  .badge { display: none; }
+  .row { grid-template-columns: 1fr; }
+  .linkbox { flex-direction: column; }
+  .linkbox .primary.small { width: 100%; }
+}
+@media (max-width: 600px) {
+  .brand { font-size: .9rem; }
+  .brand span { white-space: nowrap; }
+}
+
+.server-box { margin-top: 1.4rem; border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1rem; background: var(--panel-2); }
+.server-box summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.server-box p { font-size: .9rem; color: #b7c1cd; }
+.server-box pre { white-space: pre-wrap; word-break: break-all; font: .8rem/1.5 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .8rem; margin: .6rem 0; }
+.paste { margin-top: 1.4rem; }
+.paste h2 { margin-top: 0; }
+.paste input { margin-bottom: .9rem; font-family: var(--mono); font-size: .85rem; }
+.verify-cta { margin-top: 2.4rem; padding: 1.4rem 1.5rem; border: 1px solid rgba(70, 227, 166, .35); border-radius: 18px; background: rgba(70, 227, 166, .05); }
+.verify-cta h2 { margin: 0 0 .4rem; }
+.verify-cta p { margin: 0; color: #b7c1cd; font-size: .93rem; }
+.verify-cta .ghost { margin-top: 1rem; }
+.doc section { margin-top: 2.6rem; }
+.doc h2 { font-size: 1.3rem; }
+.doc h3 { font-size: 1rem; margin: 0 0 .35rem; color: var(--text); }
+.doc p, .doc li { color: #c3ccd7; }
+.toc { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+.toc a { font-size: .85rem; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: .4rem .75rem; color: var(--text); }
+.toc a:hover { border-color: var(--accent); }
+.checks { list-style: none; padding: 0; display: grid; gap: .7rem; }
+.checks li { padding-left: 1.8rem; position: relative; }
+.checks li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+.steps { padding-left: 1.3rem; display: grid; gap: .7rem; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+.hashes { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.hashes th, .hashes td { text-align: left; padding: .65rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.hashes th { color: var(--muted); font-weight: 600; background: var(--panel); }
+.hashes td.hash { font-family: var(--mono); font-size: .75rem; word-break: break-all; color: #b7c1cd; }
+.hashes td.ok { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.hashes td.bad { color: var(--danger); font-weight: 600; word-break: break-all; }
+.repo { font-family: var(--mono); font-size: .9rem; }
+.limits { display: grid; gap: 1rem; }
+.limits > div { border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; background: var(--panel); }
+.limits p { margin: 0; font-size: .93rem; }
+.refs { padding-left: 1.1rem; display: grid; gap: .5rem; font-size: .9rem; }
+.proofs td:first-child { width: 36%; }
+.proofs td { font-size: .85rem; color: #c3ccd7; }
+.terms { font-size: .8rem; color: var(--muted); margin: .8rem 0 0; text-align: center; }
+@media (max-width: 600px) {
+  .top { flex-wrap: wrap; row-gap: .7rem; }
+  .topnav { width: 100%; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="https://marzadurisecure.com/" aria-label="Marzaduri Secure Messages — home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 14v-3a5 5 0 0 1 10 0v3" class="shackle"/><rect x="8" y="14" width="16" height="11" rx="2.5" class="body"/></svg>
+    <span>Marzaduri <b>Secure Messages</b></span>
+  </a>
+  <nav class="topnav">
+    <span class="badge">Cifratura end-to-end · AES-256</span>
+    <a class="studio-link" href="https://marzadurisecure.com/verifica/">Verifica</a>
+    <a class="studio-link" href="https://marzaduri.com" rel="noopener">Studio Marzaduri ↗</a>
+  </nav>
+</header>
+
+<main>
+  <noscript><p class="error">Per cifrare e decifrare i messaggi nel tuo browser è necessario JavaScript.</p></noscript>
+
+  <!-- CREA -->
+  <section id="v-create" class="card">
+    <p class="eyebrow">Messaggi a lettura singola</p>
+    <h1>Una lettura.<br>Poi sparisce.</h1>
+    <p class="lead">Il testo viene cifrato nel tuo browser prima di partire. Al server arriva solo un blocco illeggibile: la chiave resta nel link che condividi. Alla prima apertura il messaggio viene cancellato per sempre.</p>
+
+    <form id="f-create" autocomplete="off">
+      <label for="msg">Messaggio</label>
+      <textarea id="msg" maxlength="20000" required spellcheck="false" placeholder="Password, codici, coordinate bancarie, dati riservati…"></textarea>
+      <div class="counter"><span id="count">0</span> / 20.000 caratteri</div>
+
+      <div class="row">
+        <div class="field">
+          <label for="ttl">Se nessuno lo apre, scade dopo</label>
+          <select id="ttl">
+            <option value="3600">1 ora</option>
+            <option value="86400" selected>24 ore</option>
+            <option value="604800">7 giorni</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pw">Password aggiuntiva <span class="opt">(facoltativa)</span></label>
+          <input id="pw" type="password" autocomplete="new-password" placeholder="Da comunicare a parte">
+        </div>
+      </div>
+
+      <p class="error" id="create-err" hidden></p>
+      <button class="primary" type="submit" id="btn-create">Cifra e genera il link</button>
+      <p class="terms">Usando il servizio accetti le <a href="https://marzadurisecure.com/note-legali/#condizioni">condizioni d'uso</a>. Il gestore non può leggere i messaggi: <a href="https://marzadurisecure.com/verifica/">verificalo tu</a>.</p>
+    </form>
+  </section>
+
+  <!-- LINK CREATO -->
+  <section id="v-created" class="card" hidden>
+    <p class="eyebrow ok">Messaggio cifrato</p>
+    <h1>Il link è pronto</h1>
+    <p class="lead">Invialo al destinatario. Funziona <b>una sola volta</b>.</p>
+    <div class="linkbox">
+      <input id="link" readonly aria-label="Link del messaggio">
+      <button type="button" id="btn-copy" class="primary small">Copia</button>
+    </div>
+    <p class="note warn" id="pw-note" hidden>Hai impostato una password: comunicala su un canale diverso da quello del link (es. link via e-mail, password per telefono).</p>
+    <ul class="facts">
+      <li>Se nessuno lo apre, viene eliminato il <b id="exp"></b>.</li>
+      <li>Il link non viene conservato da nessuna parte: se lo perdi, il messaggio è irrecuperabile.</li>
+      <li>Non aprirlo per controllarlo: la prima apertura lo distrugge.</li>
+    </ul>
+    <details class="server-box">
+      <summary>Guarda cosa ha ricevuto il server</summary>
+      <p>Questo è esattamente ciò che il tuo browser ha inviato. Il testo è un blocco cifrato illeggibile, e la chiave (la parte del link dopo il <code>#</code>) <b>non c'è</b>: senza di essa nessuno può decifrarlo, nemmeno il gestore del servizio.</p>
+      <pre id="server-view"></pre>
+      <p><a href="https://marzadurisecure.com/verifica/">Come verificarlo da solo, senza fidarti di noi →</a></p>
+    </details>
+    <button type="button" class="ghost" id="btn-new">Scrivi un altro messaggio</button>
+  </section>
+
+  <!-- VERSIONE OFFLINE: APRI UN LINK RICEVUTO -->
+  <section id="v-paste" class="card paste" hidden>
+    <p class="eyebrow ok">Versione offline</p>
+    <h2>Hai ricevuto un link? Aprilo qui</h2>
+    <p>Stai usando la copia del programma salvata sul tuo computer. Incolla il link ricevuto: verrà decifrato da questo file, non dal codice del sito.</p>
+    <form id="f-paste" autocomplete="off">
+      <input id="paste-link" placeholder="https://marzadurisecure.com/m/…#…" aria-label="Link ricevuto">
+      <p class="error" id="paste-err" hidden></p>
+      <button class="primary" type="submit">Apri il messaggio</button>
+    </form>
+  </section>
+
+  <!-- LETTURA: CONFERMA -->
+  <section id="v-read" class="card" hidden>
+    <p class="eyebrow">Messaggio sicuro in arrivo</p>
+    <h1>Qualcuno ti ha inviato un messaggio riservato</h1>
+    <p class="lead">Verrà decifrato in questo browser e <b>cancellato dal server nel momento in cui lo apri</b>. Dopo non sarà più possibile rileggerlo.</p>
+    <form id="f-read" autocomplete="off">
+      <div class="field" id="read-pw-wrap" hidden>
+        <label for="read-pw">Il mittente ha protetto il messaggio con una password</label>
+        <input id="read-pw" type="password" autocomplete="off" placeholder="Password">
+      </div>
+      <p class="error" id="read-err" hidden></p>
+      <button class="primary danger" type="submit" id="btn-open">Apri e distruggi il messaggio</button>
+    </form>
+  </section>
+
+  <!-- LETTURA: MESSAGGIO -->
+  <section id="v-message" class="card" hidden>
+    <p class="eyebrow ok">Decifrato</p>
+    <h1>Messaggio</h1>
+    <p class="note burned">Il messaggio è già stato eliminato dal server. Questa è l'unica copia: chiudendo la pagina andrà persa.</p>
+    <pre id="plain"></pre>
+    <div class="actions">
+      <button type="button" class="primary small" id="btn-copy-msg">Copia testo</button>
+      <a class="ghost" href="https://marzadurisecure.com/">Invia anche tu un messaggio sicuro</a>
+    </div>
+  </section>
+
+  <!-- NON DISPONIBILE -->
+  <section id="v-gone" class="card" hidden>
+    <p class="eyebrow bad">Non disponibile</p>
+    <h1 id="gone-title">Questo messaggio non esiste più</h1>
+    <p class="lead" id="gone-text"></p>
+    <a class="ghost" href="https://marzadurisecure.com/">Scrivi un messaggio sicuro</a>
+  </section>
+
+  <section class="how" aria-labelledby="how-title">
+    <h2 id="how-title">Come funziona, in quattro passi</h2>
+    <ol>
+      <li><b>Scrivi il messaggio.</b> Inserisci il testo riservato e premi «Cifra e genera il link». Il tuo browser lo cifra prima che parta: su internet viaggia solo un blocco di caratteri illeggibili.</li>
+      <li><b>Invia il link al destinatario.</b> Copialo e mandalo come preferisci: WhatsApp, e-mail, SMS. Il link contiene la chiave per aprire il messaggio, quindi trattalo come il messaggio stesso e mandalo solo alla persona giusta.</li>
+      <li><b>Il destinatario lo apre.</b> Vede un avviso e decide quando leggerlo premendo «Apri e distruggi il messaggio». Il testo compare solo sul suo schermo. Le anteprime automatiche di WhatsApp, Telegram o della posta non lo consumano.</li>
+      <li><b>Il messaggio sparisce.</b> Nel momento in cui viene letto, è cancellato definitivamente. Se nessuno lo apre, si elimina da solo alla scadenza che hai scelto (1 ora, 24 ore o 7 giorni).</li>
+    </ol>
+  </section>
+
+  <section class="uses" aria-labelledby="uses-title">
+    <h2 id="uses-title">Quando usarlo</h2>
+    <ul class="chips">
+      <li>Password e codici di accesso</li>
+      <li>Coordinate bancarie e IBAN</li>
+      <li>Credenziali di lavoro o del Wi-Fi</li>
+      <li>Dati personali e sanitari</li>
+      <li>Informazioni riservate per clienti e avvocati</li>
+      <li>Tutto ciò che non deve restare in una chat o in una casella e-mail</li>
+    </ul>
+  </section>
+
+  <section class="tips" aria-labelledby="tips-title">
+    <h2 id="tips-title">Consigli per la massima sicurezza</h2>
+    <ul>
+      <li><b>Per le informazioni più delicate aggiungi una password</b> e comunicala per un'altra via (es. link via e-mail, password a voce o per SMS). Chi intercettasse il solo link non potrebbe leggere nulla.</li>
+      <li><b>Non aprire il link per controllarlo:</b> lo distruggeresti prima che arrivi al destinatario.</li>
+      <li><b>Se il destinatario trova «messaggio non esiste più» senza averlo mai aperto,</b> qualcun altro l'ha letto prima di lui. Consideralo compromesso e cambia subito ciò che conteneva (password, codici).</li>
+    </ul>
+  </section>
+
+  <section class="faq" aria-labelledby="faq-title">
+    <h2 id="faq-title">Domande frequenti</h2>
+    <details>
+      <summary>Voi potete leggere i miei messaggi?</summary>
+      <p>No. Il messaggio viene cifrato nel tuo browser con AES-256-GCM, e la chiave resta solo nel link, dopo il simbolo <code>#</code>: è una parte dell'indirizzo che i browser non inviano mai al server. Noi conserviamo un blocco cifrato che non possiamo aprire, e lo cancelliamo alla prima lettura. Non devi crederci sulla parola: nella pagina <a href="https://marzadurisecure.com/verifica/">Verifica</a> trovi come controllarlo da solo, il codice pubblico, gli standard di riferimento e una versione del programma da usare offline.</p>
+    </details>
+    <details>
+      <summary>Due persone possono leggere lo stesso messaggio?</summary>
+      <p>No. La lettura e la cancellazione avvengono in un'unica operazione: anche se due persone aprono il link nello stesso istante, solo una riceve il messaggio.</p>
+    </details>
+    <details>
+      <summary>Ho perso il link, posso recuperare il messaggio?</summary>
+      <p>No. Il link non viene salvato da nessuna parte, nemmeno da noi: senza di esso il messaggio non è più decifrabile e si eliminerà alla scadenza. Basta scriverne uno nuovo.</p>
+    </details>
+    <details>
+      <summary>Cosa succede se qualcuno sbaglia la password?</summary>
+      <p>Ha 5 tentativi. Al quinto errore il messaggio viene distrutto, così nessuno può indovinare la password per tentativi.</p>
+    </details>
+    <details>
+      <summary>Serve registrarsi o installare qualcosa?</summary>
+      <p>No. Funziona da qualsiasi browser, su computer e telefono, senza account, senza app e senza cookie.</p>
+    </details>
+  </section>
+
+  <section class="about" aria-labelledby="about-title">
+    <div>
+      <h2 id="about-title">Un servizio di Studio Marzaduri</h2>
+      <p>Marzaduri Secure Messages è realizzato da Studio Marzaduri, che si occupa di informatica forense e cybersecurity.</p>
+    </div>
+    <a class="primary small" href="https://marzaduri.com" rel="noopener">Visita marzaduri.com</a>
+  </section>
+
+  <section class="verify-cta" aria-labelledby="vcta-title">
+    <h2 id="vcta-title">Non fidarti: verifica</h2>
+    <p>La sicurezza di un servizio come questo non deve dipendere dalla fiducia in chi lo gestisce. Per questo il codice è pubblico, ogni file ha un'impronta digitale controllabile e puoi usare il programma anche da una copia salvata sul tuo computer.</p>
+    <a class="ghost" href="https://marzadurisecure.com/verifica/">Come verificare tutto da solo →</a>
+  </section>
+
+  <details class="legal">
+    <summary>Privacy e condizioni d'uso</summary>
+    <h3>Informativa privacy (art. 13 GDPR)</h3>
+    <p><b>Titolare del trattamento:</b> Marco Roberto Maria Marzaduri — e-mail <a href="mailto:privacy@marzadurisecure.com">privacy@marzadurisecure.com</a>, PEC marco@pec.marzaduri.it.</p>
+    <p><b>Contenuto dei messaggi.</b> È cifrato nel browser del mittente; il titolare non ha la chiave e non può leggerlo. Sul server restano solo il testo cifrato, un'impronta di verifica derivata dalla chiave, l'indicazione della presenza di una password e la data di scadenza. Questi dati vengono cancellati alla prima lettura, dopo 5 tentativi di password errati o alla scadenza (al più tardi entro un'ora dalla scadenza).</p>
+    <p><b>Dati di navigazione.</b> Il servizio è ospitato su Cloudflare, che tratta gli indirizzi IP per garantire la sicurezza e il funzionamento della rete. Il servizio non registra log applicativi, non usa cookie, né strumenti di analisi o di tracciamento.</p>
+    <p><b>Diritti.</b> Puoi esercitare i diritti degli artt. 15-22 GDPR scrivendo a privacy@marzadurisecure.com e proporre reclamo all'autorità di controllo dello Stato in cui risiedi o lavori (in Italia, il Garante per la protezione dei dati personali). I messaggi non letti non sono riconducibili a una persona e il titolare non è in grado di identificarli.</p>
+    <h3>Condizioni d'uso</h3>
+    <p>È vietato usare il servizio per trasmettere contenuti illeciti, minacce, molestie, materiale che violi diritti di terzi o per finalità fraudolente. Il servizio è fornito "così com'è": il mittente è responsabile di custodire il link e di inviarlo solo al destinatario corretto. Segnalazioni di abuso: <a href="mailto:abuse@marzadurisecure.com">abuse@marzadurisecure.com</a>. Condizioni complete, ruolo del gestore e procedura per le autorità: <a href="https://marzadurisecure.com/note-legali/">Note legali e autorità</a>.</p>
+  </details>
+</main>
+
+<footer>
+  Un servizio di <a href="https://marzaduri.com" rel="noopener">Studio Marzaduri</a> · Informatica forense e cybersecurity<br>
+  <a href="https://marzadurisecure.com/verifica/">Verifica</a> · <a href="https://marzadurisecure.com/note-legali/">Note legali e autorità</a>
+</footer>
+<script>window.MSM_OFFLINE = true;</script>
+<script>
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const te = new TextEncoder();
+  const td = new TextDecoder();
+  const VIEWS = ['v-create', 'v-created', 'v-read', 'v-message', 'v-gone'];
+  const AAD = te.encode('marzaduri-secure-messages/v1');
+  const HKDF_SALT = te.encode('MSM-v1');
+  const PBKDF2_ITER = 600000;
+  // Versione offline (file salvato sul computer): usa il server pubblico per i soli dati cifrati.
+  const OFFLINE = location.protocol === 'file:' || window.MSM_OFFLINE === true;
+  const BASE = OFFLINE ? 'https://marzadurisecure.com' : location.origin;
+
+  function show(view) {
+    VIEWS.forEach((v) => { $(v).hidden = v !== view; });
+    window.scrollTo(0, 0);
+  }
+
+  const b64u = {
+    enc(buf) {
+      const b = new Uint8Array(buf);
+      let s = '';
+      for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+      return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    },
+    dec(str) {
+      let s = str.replace(/-/g, '+').replace(/_/g, '/');
+      while (s.length % 4) s += '=';
+      const bin = atob(s);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    },
+  };
+  const rand = (n) => crypto.getRandomValues(new Uint8Array(n));
+
+  // Chiave del link (+ eventuale password) -> chiave AES-256-GCM + token di verifica.
+  // Il token permette al server di capire che chi apre ha la chiave giusta, senza conoscerla.
+  async function deriveKeys(frag, password) {
+    let ikm = frag;
+    if (password) {
+      const pk = await crypto.subtle.importKey('raw', te.encode(password.normalize('NFC')), 'PBKDF2', false, ['deriveBits']);
+      const bits = new Uint8Array(await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: frag, iterations: PBKDF2_ITER, hash: 'SHA-256' }, pk, 256));
+      ikm = new Uint8Array(frag.length + bits.length);
+      ikm.set(frag);
+      ikm.set(bits, frag.length);
+    }
+    const base = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveKey', 'deriveBits']);
+    const key = await crypto.subtle.deriveKey(
+      { name: 'HKDF', hash: 'SHA-256', salt: HKDF_SALT, info: te.encode('enc') },
+      base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    const auth = await crypto.subtle.deriveBits(
+      { name: 'HKDF', hash: 'SHA-256', salt: HKDF_SALT, info: te.encode('auth') }, base, 256);
+    return { key, auth: b64u.enc(auth) };
+  }
+
+  async function api(path, opts = {}) {
+    const res = await fetch(BASE + path, {
+      ...opts,
+      headers: { 'content-type': 'application/json' },
+      cache: 'no-store',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
+    });
+    let data = {};
+    try { data = await res.json(); } catch (_) { data = {}; }
+    return { status: res.status, ok: res.ok, data };
+  }
+
+  async function copy(text, btn) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    const old = btn.textContent;
+    btn.textContent = 'Copiato ✓';
+    setTimeout(() => { btn.textContent = old; }, 1600);
+  }
+
+  function err(el, text) { el.textContent = text; el.hidden = !text; }
+
+  function gone(title, text) {
+    $('gone-title').textContent = title;
+    $('gone-text').textContent = text;
+    show('v-gone');
+  }
+
+  if (!window.isSecureContext || !crypto.subtle) {
+    gone('Connessione non sicura', 'La cifratura funziona solo su connessione HTTPS. Apri il sito con https://.');
+    return;
+  }
+
+  // ---------- CREAZIONE ----------
+  const msg = $('msg');
+  const fmt = new Intl.NumberFormat('it-IT');
+  msg.addEventListener('input', () => { $('count').textContent = fmt.format(msg.value.length); });
+
+  $('f-create').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = msg.value;
+    const btn = $('btn-create');
+    err($('create-err'), '');
+    if (!text.trim()) return;
+    btn.disabled = true;
+    btn.textContent = 'Cifratura in corso…';
+    try {
+      const pw = $('pw').value;
+      const frag = rand(32);
+      const iv = rand(12);
+      const { key, auth } = await deriveKeys(frag, pw);
+      const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: AAD }, key, te.encode(text));
+      const payload = { ct: b64u.enc(ct), iv: b64u.enc(iv), auth, pw: !!pw, ttl: Number($('ttl').value) };
+      const r = await api('/api/messages', { method: 'POST', body: JSON.stringify(payload) });
+      if (!r.ok) throw new Error(r.data.message || 'Il server non ha accettato il messaggio. Riprova.');
+      $('link').value = `${BASE}/m/${r.data.id}#${b64u.enc(frag)}`;
+      // Mostra all'utente esattamente ciò che è stato inviato al server.
+      $('server-view').textContent = JSON.stringify({
+        ct: payload.ct.length > 64 ? payload.ct.slice(0, 64) + '… (' + payload.ct.length + ' caratteri cifrati)' : payload.ct,
+        iv: payload.iv, auth: payload.auth, pw: payload.pw, ttl: payload.ttl,
+      }, null, 2);
+      $('exp').textContent = new Date(r.data.expires_at).toLocaleString('it-IT', { dateStyle: 'full', timeStyle: 'short' });
+      $('pw-note').hidden = !pw;
+      msg.value = '';
+      $('pw').value = '';
+      $('count').textContent = '0';
+      frag.fill(0);
+      show('v-created');
+    } catch (ex) {
+      err($('create-err'), ex.message || 'Errore imprevisto.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Cifra e genera il link';
+    }
+  });
+
+  $('btn-copy').addEventListener('click', (e) => copy($('link').value, e.currentTarget));
+  $('link').addEventListener('focus', (e) => e.currentTarget.select());
+  $('btn-new').addEventListener('click', () => { $('link').value = ''; show('v-create'); msg.focus(); });
+
+  // ---------- LETTURA ----------
+  async function initRead(id, fragStr) {
+    document.title = 'Messaggio sicuro — Marzaduri Secure Messages';
+    let frag = null;
+    try { frag = b64u.dec(fragStr); } catch (_) { frag = null; }
+    if (!frag || frag.length !== 32) {
+      gone('Link incompleto', 'Il link non contiene la chiave di decifratura: probabilmente è stato copiato solo in parte. Chiedi al mittente di reinviarlo per intero.');
+      return;
+    }
+
+    let st;
+    try { st = await api(`/api/messages/${id}`); } catch (_) {
+      gone('Servizio non raggiungibile', 'Controlla la connessione e ricarica la pagina. Il messaggio non è stato aperto.');
+      return;
+    }
+    if (!st.ok || !st.data.exists) {
+      gone('Questo messaggio non esiste più', 'È già stato letto oppure è scaduto. I messaggi si possono aprire una sola volta.');
+      return;
+    }
+    const needsPw = !!st.data.pw;
+    $('read-pw-wrap').hidden = !needsPw;
+    show('v-read');
+
+    $('f-read').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('btn-open');
+      const pw = needsPw ? $('read-pw').value : '';
+      err($('read-err'), '');
+      if (needsPw && !pw) { err($('read-err'), 'Inserisci la password.'); return; }
+      btn.disabled = true;
+      btn.textContent = 'Decifratura in corso…';
+      try {
+        const { key, auth } = await deriveKeys(frag, pw);
+        const r = await api(`/api/messages/${id}/open`, { method: 'POST', body: JSON.stringify({ auth }) });
+        if (r.ok) {
+          const pt = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: b64u.dec(r.data.iv), additionalData: AAD }, key, b64u.dec(r.data.ct));
+          $('plain').textContent = td.decode(pt);
+          frag.fill(0);
+          if (!OFFLINE) history.replaceState(null, '', `/m/${id}`); // toglie la chiave dalla barra e dalla cronologia
+          show('v-message');
+          return;
+        }
+        if (r.status === 401) {
+          const n = r.data.remaining;
+          err($('read-err'), needsPw
+            ? `Password errata. Tentativi rimasti: ${n}. Al termine il messaggio verrà distrutto.`
+            : `Il link non è valido. Tentativi rimasti: ${n}.`);
+        } else if (r.status === 410) {
+          gone('Messaggio distrutto', 'Sono stati fatti troppi tentativi con una password errata: il messaggio è stato eliminato.');
+        } else if (r.status === 404) {
+          gone('Questo messaggio non esiste più', 'È già stato letto oppure è scaduto.');
+        } else {
+          err($('read-err'), 'Errore temporaneo del servizio. Il messaggio non è stato aperto: riprova.');
+        }
+      } catch (_) {
+        err($('read-err'), 'Impossibile decifrare il messaggio. Riprova.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Apri e distruggi il messaggio';
+      }
+    });
+  }
+
+  $('btn-copy-msg').addEventListener('click', (e) => copy($('plain').textContent, e.currentTarget));
+
+  // Versione offline: si incolla il link ricevuto e lo si apre con questo file, senza usare il codice del sito.
+  if (OFFLINE) {
+    $('v-paste').hidden = false;
+    $('f-paste').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const mm = $('paste-link').value.trim().match(/\/m\/([A-Za-z0-9_-]{22})\/?#([A-Za-z0-9_-]+)$/);
+      if (!mm) { err($('paste-err'), 'Link non riconosciuto: incollalo per intero, compresa la parte dopo il simbolo #.'); return; }
+      err($('paste-err'), '');
+      $('v-paste').hidden = true;
+      initRead(mm[1], mm[2]);
+    });
+    show('v-create');
+    return;
+  }
+
+  const m = location.pathname.match(/^\/m\/([A-Za-z0-9_-]{22})\/?$/);
+  if (m) initRead(m[1], location.hash.slice(1));
+  else if (location.pathname.startsWith('/m/')) gone('Link non valido', 'L\'indirizzo del messaggio non è corretto. Chiedi al mittente di reinviarlo per intero.');
+  else show('v-create');
+})();
+</script>
+</body>
+</html>

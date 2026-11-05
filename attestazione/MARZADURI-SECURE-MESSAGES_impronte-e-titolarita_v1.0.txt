@@ -1,0 +1,47 @@
+DICHIARAZIONE DI TITOLARITA' E IMPRONTE DEL CODICE SORGENTE
+Opera: "Marzaduri Secure Messages" - software per l'invio di messaggi cifrati
+       che si autodistruggono dopo la prima lettura (https://marzadurisecure.com)
+Versione: 1.0 - pubblicata il 05/11/2026
+
+Titolare dei diritti: Marco Roberto Maria Marzaduri
+Contatti: marco@marzaduri.it - PEC marco@pec.marzaduri.it
+
+L'opera e' stata ideata, progettata e realizzata su incarico e sotto la direzione
+del titolare, che ne ha definito requisiti, funzioni, architettura di sicurezza,
+contenuti e scelte grafiche, con l'ausilio di strumenti di intelligenza artificiale.
+Tutti i diritti riservati.
+
+Il presente documento elenca le impronte SHA-256 dell'archivio del codice sorgente
+e di ciascun file in esso contenuto. Firmato digitalmente e munito di marca
+temporale, attesta l'esistenza e il contenuto esatto dell'opera alla data della marca.
+
+Archivio:
+15e434cda31021ce1ca3d3b72f2f391b7bbd8266f1c984dc962356e73b581563  marzadurisecure-codice-sorgente-v1.0-2026-11-05.zip
+
+File contenuti nell'archivio:
+e6a5619fd465f453622c4878c8c4fe87bda8cd8de9c969343397a6fbefd853b0  marzadurisecure-codice-sorgente/IMPRONTE.md
+65d0b5d777748098570d8fbe59024c67f2673138af5d03613052a1d52dec3d4f  marzadurisecure-codice-sorgente/README.md
+e186dfe8ee768e3cb15cec1a0ec6e6c5d44a2bda5d29297c605d9754f51115c6  marzadurisecure-codice-sorgente/RIPUBBLICA.bat
+10d38bd2596366074b9158a107b730e64b68a5aff615ea40d1f4460031c906b0  marzadurisecure-codice-sorgente/build.mjs
+0dbb7a18dcf988c2ad63ef9ee418beb088d9d72d566fb0cf6af4a9e1b9994964  marzadurisecure-codice-sorgente/package.json
+ad5599c0f17fe74622a16206537fdc8ed4ccdc230c142e8bdde1a42545a1a33d  marzadurisecure-codice-sorgente/schema.sql
+d53db2480a7650cfaf7affba618f188dc4b61e130f23ab1f84e5e47ef8d2614b  marzadurisecure-codice-sorgente/src/build/client.js.txt
+4c4ad365c979b62c16a00084d42f0042fd6139cbcf238e814ce5b1a954e4deef  marzadurisecure-codice-sorgente/src/build/index.html
+fe85b9a536a92187f5834fcfb7cd12a39e039b0d699b07030a5acfe134c40744  marzadurisecure-codice-sorgente/src/build/note-legali.html
+66fb8b81f436c893b2f25e027db9fcd25eb5d8c49e107ed836a9d29fb205d95c  marzadurisecure-codice-sorgente/src/build/offline.html
+74248ebbc5f0459442c479da44d1b1691171d703557a93fb078fc34df675bb09  marzadurisecure-codice-sorgente/src/build/security.txt
+6021dad6851591accd0d1f07134bae59434d0b57cfe7755be79712d942250480  marzadurisecure-codice-sorgente/src/build/style.css
+1aeb1b9cdc89227ff46d595ff343143b1171052dc5bc168d35f2fe9b50550de1  marzadurisecure-codice-sorgente/src/build/verifica.html
+0ba9141a1f6dca513c936bcd76740e68b49f13367e71bfaab359e84c664294f8  marzadurisecure-codice-sorgente/src/build/verifica.js.txt
+d53db2480a7650cfaf7affba618f188dc4b61e130f23ab1f84e5e47ef8d2614b  marzadurisecure-codice-sorgente/src/client.js.txt
+c9dec10625fa172d95ec7c1420511c875edd9acb18210587f8fc1c3050c3028b  marzadurisecure-codice-sorgente/src/index.html
+14e3ff6d33fbd5ce6b0a8a6e76c7e8e8d2d01d0b90fdf109cda58bff9e006576  marzadurisecure-codice-sorgente/src/note-legali.html
+6021dad6851591accd0d1f07134bae59434d0b57cfe7755be79712d942250480  marzadurisecure-codice-sorgente/src/style.css
+8ecd85a97babbd9ced47c396cfd7e86d6621e81c7f3c68b55495505d74fdf187  marzadurisecure-codice-sorgente/src/verifica.html
+2f088558f16e1d2e9716d3e54859ed4d9c41857f7c6569394f314f9ef97afde8  marzadurisecure-codice-sorgente/src/verifica.js.txt
+5ade9be35445ae2747ebb03cd710eb978be025273cf199f6b06473a1c77b0f37  marzadurisecure-codice-sorgente/src/worker.js
+d877ca42519c75be34b8e9b8669fc99a3233d723333c9d20c0cbb3214b3dfb83  marzadurisecure-codice-sorgente/wrangler.toml
+
+Verifica: calcolare l'impronta SHA-256 dell'archivio o di un file
+(Windows: certutil -hashfile NOMEFILE SHA256 - Linux/Mac: sha256sum NOMEFILE)
+e confrontarla con quella riportata sopra.

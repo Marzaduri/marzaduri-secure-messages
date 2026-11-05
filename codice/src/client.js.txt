@@ -1,0 +1,233 @@
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const te = new TextEncoder();
+  const td = new TextDecoder();
+  const VIEWS = ['v-create', 'v-created', 'v-read', 'v-message', 'v-gone'];
+  const AAD = te.encode('marzaduri-secure-messages/v1');
+  const HKDF_SALT = te.encode('MSM-v1');
+  const PBKDF2_ITER = 600000;
+  // Versione offline (file salvato sul computer): usa il server pubblico per i soli dati cifrati.
+  const OFFLINE = location.protocol === 'file:' || window.MSM_OFFLINE === true;
+  const BASE = OFFLINE ? 'https://marzadurisecure.com' : location.origin;
+
+  function show(view) {
+    VIEWS.forEach((v) => { $(v).hidden = v !== view; });
+    window.scrollTo(0, 0);
+  }
+
+  const b64u = {
+    enc(buf) {
+      const b = new Uint8Array(buf);
+      let s = '';
+      for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+      return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    },
+    dec(str) {
+      let s = str.replace(/-/g, '+').replace(/_/g, '/');
+      while (s.length % 4) s += '=';
+      const bin = atob(s);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    },
+  };
+  const rand = (n) => crypto.getRandomValues(new Uint8Array(n));
+
+  // Chiave del link (+ eventuale password) -> chiave AES-256-GCM + token di verifica.
+  // Il token permette al server di capire che chi apre ha la chiave giusta, senza conoscerla.
+  async function deriveKeys(frag, password) {
+    let ikm = frag;
+    if (password) {
+      const pk = await crypto.subtle.importKey('raw', te.encode(password.normalize('NFC')), 'PBKDF2', false, ['deriveBits']);
+      const bits = new Uint8Array(await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: frag, iterations: PBKDF2_ITER, hash: 'SHA-256' }, pk, 256));
+      ikm = new Uint8Array(frag.length + bits.length);
+      ikm.set(frag);
+      ikm.set(bits, frag.length);
+    }
+    const base = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveKey', 'deriveBits']);
+    const key = await crypto.subtle.deriveKey(
+      { name: 'HKDF', hash: 'SHA-256', salt: HKDF_SALT, info: te.encode('enc') },
+      base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    const auth = await crypto.subtle.deriveBits(
+      { name: 'HKDF', hash: 'SHA-256', salt: HKDF_SALT, info: te.encode('auth') }, base, 256);
+    return { key, auth: b64u.enc(auth) };
+  }
+
+  async function api(path, opts = {}) {
+    const res = await fetch(BASE + path, {
+      ...opts,
+      headers: { 'content-type': 'application/json' },
+      cache: 'no-store',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
+    });
+    let data = {};
+    try { data = await res.json(); } catch (_) { data = {}; }
+    return { status: res.status, ok: res.ok, data };
+  }
+
+  async function copy(text, btn) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    const old = btn.textContent;
+    btn.textContent = 'Copiato ✓';
+    setTimeout(() => { btn.textContent = old; }, 1600);
+  }
+
+  function err(el, text) { el.textContent = text; el.hidden = !text; }
+
+  function gone(title, text) {
+    $('gone-title').textContent = title;
+    $('gone-text').textContent = text;
+    show('v-gone');
+  }
+
+  if (!window.isSecureContext || !crypto.subtle) {
+    gone('Connessione non sicura', 'La cifratura funziona solo su connessione HTTPS. Apri il sito con https://.');
+    return;
+  }
+
+  // ---------- CREAZIONE ----------
+  const msg = $('msg');
+  const fmt = new Intl.NumberFormat('it-IT');
+  msg.addEventListener('input', () => { $('count').textContent = fmt.format(msg.value.length); });
+
+  $('f-create').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = msg.value;
+    const btn = $('btn-create');
+    err($('create-err'), '');
+    if (!text.trim()) return;
+    btn.disabled = true;
+    btn.textContent = 'Cifratura in corso…';
+    try {
+      const pw = $('pw').value;
+      const frag = rand(32);
+      const iv = rand(12);
+      const { key, auth } = await deriveKeys(frag, pw);
+      const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: AAD }, key, te.encode(text));
+      const payload = { ct: b64u.enc(ct), iv: b64u.enc(iv), auth, pw: !!pw, ttl: Number($('ttl').value) };
+      const r = await api('/api/messages', { method: 'POST', body: JSON.stringify(payload) });
+      if (!r.ok) throw new Error(r.data.message || 'Il server non ha accettato il messaggio. Riprova.');
+      $('link').value = `${BASE}/m/${r.data.id}#${b64u.enc(frag)}`;
+      // Mostra all'utente esattamente ciò che è stato inviato al server.
+      $('server-view').textContent = JSON.stringify({
+        ct: payload.ct.length > 64 ? payload.ct.slice(0, 64) + '… (' + payload.ct.length + ' caratteri cifrati)' : payload.ct,
+        iv: payload.iv, auth: payload.auth, pw: payload.pw, ttl: payload.ttl,
+      }, null, 2);
+      $('exp').textContent = new Date(r.data.expires_at).toLocaleString('it-IT', { dateStyle: 'full', timeStyle: 'short' });
+      $('pw-note').hidden = !pw;
+      msg.value = '';
+      $('pw').value = '';
+      $('count').textContent = '0';
+      frag.fill(0);
+      show('v-created');
+    } catch (ex) {
+      err($('create-err'), ex.message || 'Errore imprevisto.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Cifra e genera il link';
+    }
+  });
+
+  $('btn-copy').addEventListener('click', (e) => copy($('link').value, e.currentTarget));
+  $('link').addEventListener('focus', (e) => e.currentTarget.select());
+  $('btn-new').addEventListener('click', () => { $('link').value = ''; show('v-create'); msg.focus(); });
+
+  // ---------- LETTURA ----------
+  async function initRead(id, fragStr) {
+    document.title = 'Messaggio sicuro — Marzaduri Secure Messages';
+    let frag = null;
+    try { frag = b64u.dec(fragStr); } catch (_) { frag = null; }
+    if (!frag || frag.length !== 32) {
+      gone('Link incompleto', 'Il link non contiene la chiave di decifratura: probabilmente è stato copiato solo in parte. Chiedi al mittente di reinviarlo per intero.');
+      return;
+    }
+
+    let st;
+    try { st = await api(`/api/messages/${id}`); } catch (_) {
+      gone('Servizio non raggiungibile', 'Controlla la connessione e ricarica la pagina. Il messaggio non è stato aperto.');
+      return;
+    }
+    if (!st.ok || !st.data.exists) {
+      gone('Questo messaggio non esiste più', 'È già stato letto oppure è scaduto. I messaggi si possono aprire una sola volta.');
+      return;
+    }
+    const needsPw = !!st.data.pw;
+    $('read-pw-wrap').hidden = !needsPw;
+    show('v-read');
+
+    $('f-read').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('btn-open');
+      const pw = needsPw ? $('read-pw').value : '';
+      err($('read-err'), '');
+      if (needsPw && !pw) { err($('read-err'), 'Inserisci la password.'); return; }
+      btn.disabled = true;
+      btn.textContent = 'Decifratura in corso…';
+      try {
+        const { key, auth } = await deriveKeys(frag, pw);
+        const r = await api(`/api/messages/${id}/open`, { method: 'POST', body: JSON.stringify({ auth }) });
+        if (r.ok) {
+          const pt = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: b64u.dec(r.data.iv), additionalData: AAD }, key, b64u.dec(r.data.ct));
+          $('plain').textContent = td.decode(pt);
+          frag.fill(0);
+          if (!OFFLINE) history.replaceState(null, '', `/m/${id}`); // toglie la chiave dalla barra e dalla cronologia
+          show('v-message');
+          return;
+        }
+        if (r.status === 401) {
+          const n = r.data.remaining;
+          err($('read-err'), needsPw
+            ? `Password errata. Tentativi rimasti: ${n}. Al termine il messaggio verrà distrutto.`
+            : `Il link non è valido. Tentativi rimasti: ${n}.`);
+        } else if (r.status === 410) {
+          gone('Messaggio distrutto', 'Sono stati fatti troppi tentativi con una password errata: il messaggio è stato eliminato.');
+        } else if (r.status === 404) {
+          gone('Questo messaggio non esiste più', 'È già stato letto oppure è scaduto.');
+        } else {
+          err($('read-err'), 'Errore temporaneo del servizio. Il messaggio non è stato aperto: riprova.');
+        }
+      } catch (_) {
+        err($('read-err'), 'Impossibile decifrare il messaggio. Riprova.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Apri e distruggi il messaggio';
+      }
+    });
+  }
+
+  $('btn-copy-msg').addEventListener('click', (e) => copy($('plain').textContent, e.currentTarget));
+
+  // Versione offline: si incolla il link ricevuto e lo si apre con questo file, senza usare il codice del sito.
+  if (OFFLINE) {
+    $('v-paste').hidden = false;
+    $('f-paste').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const mm = $('paste-link').value.trim().match(/\/m\/([A-Za-z0-9_-]{22})\/?#([A-Za-z0-9_-]+)$/);
+      if (!mm) { err($('paste-err'), 'Link non riconosciuto: incollalo per intero, compresa la parte dopo il simbolo #.'); return; }
+      err($('paste-err'), '');
+      $('v-paste').hidden = true;
+      initRead(mm[1], mm[2]);
+    });
+    show('v-create');
+    return;
+  }
+
+  const m = location.pathname.match(/^\/m\/([A-Za-z0-9_-]{22})\/?$/);
+  if (m) initRead(m[1], location.hash.slice(1));
+  else if (location.pathname.startsWith('/m/')) gone('Link non valido', 'L\'indirizzo del messaggio non è corretto. Chiedi al mittente di reinviarlo per intero.');
+  else show('v-create');
+})();

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verifica — come controllare da soli che nessuno può leggere i messaggi | Marzaduri Secure Messages</title>
+<meta name="description" content="Come verificare in autonomia, senza fidarsi del gestore, che Marzaduri Secure Messages non può leggere i messaggi: codice pubblico, impronte SHA-256, versione offline e standard di riferimento.">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0b0e12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e12'/%3E%3Cpath d='M11 14v-3a5 5 0 0 1 10 0v3' stroke='%2346e3a6' stroke-width='2.4' fill='none'/%3E%3Crect x='8' y='14' width='16' height='11' rx='2.5' fill='%2346e3a6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css" integrity="sha256-YCHa1oUVkazNDR8HE0uuWUNNC1fP53Vb55cS2UIlBIA=">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/" aria-label="Marzaduri Secure Messages — home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 14v-3a5 5 0 0 1 10 0v3" class="shackle"/><rect x="8" y="14" width="16" height="11" rx="2.5" class="body"/></svg>
+    <span>Marzaduri <b>Secure Messages</b></span>
+  </a>
+  <nav class="topnav">
+    <a class="studio-link" href="/">Scrivi un messaggio</a>
+  </nav>
+</header>
+
+<main class="doc">
+  <p class="eyebrow ok">Trasparenza</p>
+  <h1>Non fidarti di noi: verifica</h1>
+  <p class="lead">Un servizio di messaggi riservati è credibile solo se chiunque può controllare, da solo, che il gestore non è in grado di leggere i messaggi. Questa pagina spiega come farlo, passo per passo, con i riferimenti agli standard internazionali su cui si basa il sistema.</p>
+
+  <nav class="toc" aria-label="Indice">
+    <a href="#breve">In breve</a>
+    <a href="#prove">Affermazioni e prove</a>
+    <a href="#come">Come funziona</a>
+    <a href="#prova">Provalo in 2 minuti</a>
+    <a href="#codice">Codice e impronte</a>
+    <a href="#offline">Versione offline</a>
+    <a href="#limiti">Limiti e soluzioni</a>
+    <a href="#riferimenti">Riferimenti</a>
+  </nav>
+
+  <section id="breve">
+    <h2>In breve</h2>
+    <p class="note burned"><b>Non hai bisogno di fidarti di chi gestisce il servizio.</b> La riservatezza non dipende da una promessa del gestore, ma dal modo in cui il sistema è costruito: il gestore non è tecnicamente in grado di leggere i messaggi, e chiunque può verificarlo con i metodi descritti in questa pagina.</p>
+    <ul class="checks">
+      <li><b>Il testo viene cifrato sul tuo dispositivo</b>, prima di essere inviato. Al server arriva solo un blocco di caratteri illeggibili.</li>
+      <li><b>La chiave per leggerlo non arriva mai al server</b>: si trova nel link, dopo il simbolo <code>#</code>, e per regola di Internet i browser non trasmettono quella parte dell'indirizzo.</li>
+      <li><b>Il messaggio si cancella alla prima lettura</b>, con un'unica operazione che legge e cancella insieme: due persone non possono leggerlo.</li>
+      <li><b>Tutto è verificabile da chiunque</b>: il codice che esegue la cifratura è leggibile da chiunque nel proprio browser, ogni file ha un'impronta digitale controllabile e puoi usare una copia del programma salvata sul tuo computer, che il sito non può modificare.</li>
+    </ul>
+  </section>
+
+  <section id="prove">
+    <h2>Ogni affermazione, con la sua prova</h2>
+    <p>Non devi fidarti di chi gestisce il servizio, né di questa pagina. Ogni garanzia qui sotto è accompagnata dal modo in cui puoi dimostrarla da solo. Dove una cosa non è dimostrabile dall'esterno (come per qualunque servizio online), lo diciamo, e spieghiamo perché non incide sulla riservatezza dei messaggi.</p>
+    <div class="table-wrap">
+      <table class="hashes proofs">
+        <thead><tr><th>Affermazione</th><th>Come si dimostra</th></tr></thead>
+        <tbody>
+          <tr><td><b>1. Il testo viene cifrato sul tuo dispositivo, prima di partire.</b></td><td>Strumenti del browser (F12 → Rete): nella richiesta <code>messages</code> il tuo testo non compare, solo dati cifrati. Vedi la <a href="#prova">prova in 2 minuti</a>. Nel codice pubblico la cifratura è nella funzione che chiama <code>crypto.subtle.encrypt</code>, prima dell'invio.</td></tr>
+          <tr><td><b>2. La chiave non arriva mai al server.</b></td><td>F12 → Rete: l'indirizzo delle richieste è <code>/m/IDENTIFICATIVO</code>, senza la parte dopo il <code>#</code>, e la chiave non è nel contenuto inviato. È il comportamento previsto per tutti i browser dallo standard RFC 3986, §3.5.</td></tr>
+          <tr><td><b>3. Il gestore non può leggere i messaggi.</b></td><td>È la conseguenza diretta delle prove 1 e 2: il server possiede solo dati cifrati con AES-256-GCM (NIST SP 800-38D) e non possiede la chiave. Decifrare senza la chiave non è praticabile, come per i sistemi bancari che usano lo stesso standard.</td></tr>
+          <tr><td><b>4. Il programma che stai usando è quello pubblicato.</b></td><td>La tabella delle <a href="#codice">impronte</a> confronta dal vivo i file ricevuti con le impronte ufficiali dell'archivio pubblico. La pagina carica il programma con il controllo di integrità del browser (W3C SRI). Con la <a href="#offline">versione offline</a> usi un file che hai verificato tu e che il server non può cambiare.</td></tr>
+          <tr><td><b>5. Nessun cookie, nessun tracciamento, nessuno script di terzi.</b></td><td>F12 → Applicazione (o Archiviazione) → Cookie: l'elenco è vuoto. F12 → Rete: tutte le richieste vanno solo a marzadurisecure.com. L'intestazione <code>Content-Security-Policy</code> (F12 → Rete → Intestazioni) vieta al browser di caricare qualsiasi risorsa esterna.</td></tr>
+          <tr><td><b>6. Un messaggio si apre una sola volta.</b></td><td>Prova diretta: apri lo stesso link due volte; la seconda volta il messaggio non esiste più. Il codice del server, pubblicato nell'archivio pubblico, legge e cancella con un'unica istruzione (<code>DELETE … RETURNING</code>). <i>Limite dichiarato:</i> chi visita il sito non può ispezionare il server. Ma anche se il server conservasse una copia del dato cifrato, senza la chiave resterebbe illeggibile (prova 3).</td></tr>
+          <tr><td><b>7. Il servizio non registra gli indirizzi IP.</b></td><td><i>Non dimostrabile dall'esterno</i>, per questo come per qualunque servizio online: nessun visitatore può vedere dentro un server. Per questo la riservatezza del contenuto non dipende da questa dichiarazione, ma solo dalle prove 1-4. Chi vuole nascondere anche il proprio indirizzo IP può usare una VPN o Tor Browser: il servizio funziona ugualmente.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="come">
+    <h2>Come funziona, passo per passo</h2>
+    <ol class="steps">
+      <li><b>Generazione della chiave.</b> Il tuo browser crea una chiave casuale di 256 bit con il generatore crittografico del sistema (<code>crypto.getRandomValues</code>, previsto dallo standard W3C <i>Web Cryptography API</i>). La chiave nasce sul tuo dispositivo e non viene mai inviata.</li>
+      <li><b>Cifratura.</b> Il testo viene cifrato con <b>AES-256-GCM</b>, l'algoritmo standardizzato dal NIST (SP 800-38D) e usato da banche e governi. GCM garantisce anche l'integrità: se qualcuno alterasse anche un solo carattere del dato cifrato, la decifratura fallirebbe.</li>
+      <li><b>Password facoltativa.</b> Se aggiungi una password, viene trasformata con <b>PBKDF2-HMAC-SHA-256 a 600.000 iterazioni</b> (RFC 8018), il valore raccomandato da OWASP. Chiave del link e password vengono combinate con <b>HKDF-SHA-256</b> (RFC 5869): servono entrambe per leggere il messaggio.</li>
+      <li><b>Invio.</b> Al server arrivano solo: il testo cifrato, un numero casuale tecnico (IV), un'«impronta di verifica» derivata dalla chiave (che non permette di decifrare, ma serve a impedire che chi non ha il link completo distrugga il messaggio), l'indicazione della presenza di una password e la scadenza. Nient'altro.</li>
+      <li><b>Il link.</b> Il link ha la forma <code>https://marzadurisecure.com/m/IDENTIFICATIVO#CHIAVE</code>. Secondo lo standard degli indirizzi web (RFC 3986, §3.5), la parte dopo il <code>#</code> è elaborata solo dal browser e non viene inclusa nelle richieste inviate al server.</li>
+      <li><b>Lettura e distruzione.</b> Quando il destinatario conferma l'apertura, il server consegna il dato cifrato e lo cancella nella stessa istruzione del database (<code>DELETE … RETURNING</code>): non esiste un momento in cui il messaggio sia stato letto ma non ancora cancellato. La decifratura avviene nel browser del destinatario.</li>
+      <li><b>Scadenza.</b> I messaggi mai aperti vengono eliminati automaticamente alla scadenza scelta (1 ora, 24 ore o 7 giorni), con un controllo orario.</li>
+    </ol>
+  </section>
+
+  <section id="prova">
+    <h2>Provalo tu in 2 minuti, senza competenze tecniche</h2>
+    <p>Puoi osservare con i tuoi occhi cosa esce dal tuo computer, usando gli strumenti già presenti in ogni browser (Chrome, Edge, Firefox) da computer.</p>
+    <ol class="steps">
+      <li>Apri <a href="/">marzadurisecure.com</a>, premi <b>F12</b> (su Mac: <b>Cmd+Opzione+I</b>) e scegli la scheda <b>Rete</b> (o <i>Network</i>).</li>
+      <li>Scrivi un messaggio di prova riconoscibile, per esempio <code>PROVA-123</code>, e premi «Cifra e genera il link».</li>
+      <li>Nell'elenco compare la richiesta <code>messages</code>. Cliccala e apri <b>Payload</b> (o <i>Richiesta</i>): vedrai solo <code>ct</code>, <code>iv</code>, <code>auth</code>, <code>pw</code> e <code>ttl</code>. La parola <code>PROVA-123</code> non c'è, e non c'è nemmeno la chiave che compare nel link dopo il <code>#</code>.</li>
+      <li>Puoi cercare la tua parola in tutto il traffico: in Chrome, <b>Ctrl+F</b> dentro la scheda Rete. Non la troverai.</li>
+      <li>Apri il link in un'altra finestra con la scheda Rete aperta: la richiesta della pagina ha l'indirizzo <code>/m/IDENTIFICATIVO</code>, <b>senza</b> la parte dopo il <code>#</code>. La richiesta <code>open</code> riceve dal server solo il blocco cifrato, che il tuo browser decifra.</li>
+    </ol>
+    <p class="note burned">Dopo aver creato un messaggio, la pagina stessa ti mostra anche il riquadro «Guarda cosa ha ricevuto il server», con il contenuto esatto della richiesta.</p>
+  </section>
+
+  <section id="codice">
+    <h2>Il codice è pubblico e ha un'impronta digitale</h2>
+    <p>Ogni file del programma ha un'impronta <b>SHA-256</b>: una sequenza di 64 caratteri che cambia completamente se nel file cambia anche una sola virgola. Le impronte ufficiali sono pubblicate insieme al codice sorgente nell'archivio pubblico:</p>
+    <p class="repo" id="repo"></p>
+    <p>Qui sotto il tuo browser scarica in questo momento i file che il sito sta usando, ne calcola l'impronta e la confronta con quella ufficiale. Confronta anche tu i valori con quelli pubblicati nell'archivio pubblico: quella è la fonte che il gestore del sito non può modificare di nascosto.</p>
+    <div class="table-wrap">
+      <table class="hashes">
+        <thead><tr><th>File</th><th>Impronta SHA-256 ufficiale</th><th>Calcolata ora</th></tr></thead>
+        <tbody id="hash-rows"></tbody>
+      </table>
+    </div>
+    <p class="small-print">Da riga di comando: <code>curl -s https://marzadurisecure.com/app.js | sha256sum</code> (Windows: scarica il file e usa <code>certutil -hashfile app.js SHA256</code>). Inoltre la pagina principale carica il programma con il controllo di integrità del browser (<i>Subresource Integrity</i>, W3C): se il file del programma non corrispondesse all'impronta indicata nella pagina, il browser si rifiuterebbe di eseguirlo.</p>
+  </section>
+
+  <section id="offline">
+    <h2>Versione offline: la garanzia più forte</h2>
+    <p>Qualsiasi sito web, per sua natura, invia al tuo browser il programma ogni volta che lo apri. In teoria, chi controlla il server potrebbe un giorno inviare un programma diverso. Per eliminare anche questo dubbio puoi usare una <b>copia del programma salvata sul tuo computer</b>:</p>
+    <ol class="steps">
+      <li>Scarica il file <a href="/marzaduri-secure-offline.html" download>marzaduri-secure-offline.html</a>.</li>
+      <li>Controlla <b>una volta</b> che la sua impronta SHA-256 corrisponda a quella pubblicata nell'archivio pubblico (riga «versione offline» della tabella sopra).</li>
+      <li>Aprilo con doppio clic: funziona nel tuo browser come il sito. Per scrivere un messaggio usalo normalmente; per leggere un link ricevuto, incollalo nel riquadro «Hai ricevuto un link? Aprilo qui».</li>
+    </ol>
+    <p>Con la versione offline la cifratura e la decifratura le esegue il file che hai sul tuo computer e che hai verificato: il server riceve e consegna solo dati cifrati, e non ha alcun modo di cambiare il programma che stai usando. I link creati dalla versione offline si aprono normalmente anche dal sito.</p>
+  </section>
+
+  <section id="limiti">
+    <h2>Limiti, detti con chiarezza, e come sono risolti</h2>
+    <div class="limits">
+      <div><h3>«Chi gestisce il server potrebbe cambiare il programma»</h3>
+        <p>È il limite di ogni servizio web, non solo di questo. <b>Soluzione:</b> codice pubblico con impronte verificabili da chiunque, controllo di integrità nel browser e, soprattutto, la <a href="#offline">versione offline</a>, che il server non può modificare.</p></div>
+      <div><h3>«Il server vede il mio indirizzo IP»</h3>
+        <p>Ogni connessione Internet mostra un indirizzo IP. Il gestore dichiara di <b>non registrare</b> gli indirizzi IP (dichiarazione non dimostrabile dall'esterno: vedi la prova 7); la rete Cloudflare, che ospita il servizio, tratta gli IP per motivi di sicurezza. <b>Soluzione:</b> se vuoi nascondere anche il tuo IP, puoi usare una VPN o Tor Browser: il servizio funziona ugualmente e non le blocca.</p></div>
+      <div><h3>«E se qualcuno intercetta il link?»</h3>
+        <p>Chi ha il link completo può leggere il messaggio, ma solo una volta. <b>Soluzione:</b> aggiungi una password e comunicala per un'altra via (es. link per e-mail, password a voce). Se il destinatario trova «messaggio non esiste più» senza averlo aperto, sai con certezza che qualcuno l'ha letto prima: cambia subito ciò che conteneva.</p></div>
+      <div><h3>«Il destinatario può copiare il messaggio»</h3>
+        <p>Chi legge un testo può sempre trascriverlo o fotografarlo: nessuna tecnologia lo impedisce. <b>Soluzione:</b> il servizio garantisce che il messaggio non resti in nessun archivio, chat o casella e-mail; la scelta del destinatario resta tua.</p></div>
+      <div><h3>«E se il mio telefono o computer è infetto?»</h3>
+        <p>Un programma spia installato sul dispositivo può vedere tutto ciò che scrivi o leggi, con qualsiasi servizio. <b>Soluzione:</b> usa dispositivi aggiornati e, per informazioni critiche, verifica che anche il destinatario lo faccia.</p></div>
+    </div>
+  </section>
+
+  <section id="legale">
+    <h2>Ruolo del gestore e richieste delle autorità</h2>
+    <p>Il ruolo del gestore, i dati effettivamente esistenti, le condizioni d'uso, la segnalazione di abusi e la procedura per le richieste delle autorità sono descritti nella pagina <a href="/note-legali/">Note legali e autorità</a>.</p>
+  </section>
+
+  <section id="segnala">
+    <h2>Hai trovato un problema di sicurezza?</h2>
+    <p>Scrivi a <a href="mailto:security@marzadurisecure.com">security@marzadurisecure.com</a>. Le segnalazioni vengono esaminate con priorità. Il contatto è pubblicato anche nel file standard <a href="/.well-known/security.txt">/.well-known/security.txt</a> (RFC 9116).</p>
+  </section>
+
+  <section id="riferimenti">
+    <h2>Riferimenti</h2>
+    <ul class="refs">
+      <li>NIST SP 800-38D — <i>Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM)</i>. <a href="https://csrc.nist.gov/pubs/sp/800/38/d/final" rel="noopener">csrc.nist.gov</a></li>
+      <li>FIPS 197 — <i>Advanced Encryption Standard (AES)</i>. <a href="https://csrc.nist.gov/pubs/fips/197/final" rel="noopener">csrc.nist.gov</a></li>
+      <li>RFC 5869 — <i>HMAC-based Extract-and-Expand Key Derivation Function (HKDF)</i>. <a href="https://www.rfc-editor.org/rfc/rfc5869" rel="noopener">rfc-editor.org</a></li>
+      <li>RFC 8018 — <i>PKCS #5: Password-Based Cryptography Specification (PBKDF2)</i>. <a href="https://www.rfc-editor.org/rfc/rfc8018" rel="noopener">rfc-editor.org</a></li>
+      <li>OWASP — <i>Password Storage Cheat Sheet</i> (PBKDF2-HMAC-SHA-256, 600.000 iterazioni). <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html" rel="noopener">owasp.org</a></li>
+      <li>RFC 3986, §3.5 — <i>Uniform Resource Identifier: Fragment</i> (la parte dopo il <code>#</code> è elaborata solo dal browser). <a href="https://www.rfc-editor.org/rfc/rfc3986#section-3.5" rel="noopener">rfc-editor.org</a></li>
+      <li>W3C — <i>Web Cryptography API</i>. <a href="https://www.w3.org/TR/WebCryptoAPI/" rel="noopener">w3.org</a></li>
+      <li>W3C — <i>Subresource Integrity</i>. <a href="https://www.w3.org/TR/SRI/" rel="noopener">w3.org</a></li>
+      <li>SQLite — clausola <i>RETURNING</i> (lettura e cancellazione in un'unica istruzione). <a href="https://www.sqlite.org/lang_returning.html" rel="noopener">sqlite.org</a></li>
+      <li>RFC 9116 — <i>A File Format to Aid in Security Vulnerability Disclosure (security.txt)</i>. <a href="https://www.rfc-editor.org/rfc/rfc9116" rel="noopener">rfc-editor.org</a></li>
+    </ul>
+    <p class="small-print">Lo stesso principio (cifratura nel browser e chiave nella parte del link dopo il <code>#</code>) è adottato da servizi noti come PrivateBin e Bitwarden Send.</p>
+  </section>
+</main>
+
+<footer>
+  Un servizio di <a href="https://marzaduri.com" rel="noopener">Studio Marzaduri</a> · <a href="/note-legali/">Note legali e autorità</a> · <a href="/">Scrivi un messaggio sicuro</a>
+</footer>
+<script src="/verifica.js" integrity="sha256-C6kUGh9tylE8k2vNdnQOaLSfEzZ+cb+qs1noTGZClPg=" defer></script>
+</body>
+</html>

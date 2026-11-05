@@ -1,0 +1,39 @@
+(() => {
+  'use strict';
+  // Impronte ufficiali, inserite al momento della pubblicazione (devono coincidere con quelle dell'archivio pubblico).
+  const REPO = '__REPO_URL__';
+  const UFFICIALI = __HASHES__;
+
+  const repo = document.getElementById('repo');
+  if (REPO.startsWith('https://')) {
+    const a = document.createElement('a');
+    a.href = REPO; a.rel = 'noopener'; a.textContent = REPO;
+    repo.textContent = 'Archivio pubblico: '; repo.appendChild(a);
+  } else {
+    repo.textContent = 'Archivio pubblico del codice: in pubblicazione.';
+  }
+
+  async function sha256(path) {
+    const r = await fetch(path, { cache: 'no-store', credentials: 'omit' });
+    const b = await r.arrayBuffer();
+    const d = await crypto.subtle.digest('SHA-256', b);
+    return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, '0')).join('');
+  }
+
+  const tbody = document.getElementById('hash-rows');
+  UFFICIALI.forEach(async (f) => {
+    const tr = document.createElement('tr');
+    const c1 = document.createElement('td'); c1.textContent = f.nome;
+    const c2 = document.createElement('td'); c2.className = 'hash'; c2.textContent = f.sha256;
+    const c3 = document.createElement('td'); c3.textContent = 'calcolo…';
+    tr.append(c1, c2, c3); tbody.appendChild(tr);
+    try {
+      const h = await sha256(f.percorso);
+      const ok = h === f.sha256;
+      c3.textContent = ok ? '✓ corrisponde' : '✗ diversa: ' + h;
+      c3.className = ok ? 'ok' : 'bad';
+    } catch (e) {
+      c3.textContent = 'non calcolabile';
+    }
+  });
+})();

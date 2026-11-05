@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marzaduri Secure Messages — messaggi cifrati che si autodistruggono</title>
+<meta name="description" content="Invia un messaggio cifrato end-to-end che si autodistrugge alla prima lettura. Il server non vede mai il contenuto né la chiave.">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0b0e12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e12'/%3E%3Cpath d='M11 14v-3a5 5 0 0 1 10 0v3' stroke='%2346e3a6' stroke-width='2.4' fill='none'/%3E%3Crect x='8' y='14' width='16' height='11' rx='2.5' fill='%2346e3a6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css" integrity="sha256-YCHa1oUVkazNDR8HE0uuWUNNC1fP53Vb55cS2UIlBIA=">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/" aria-label="Marzaduri Secure Messages — home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 14v-3a5 5 0 0 1 10 0v3" class="shackle"/><rect x="8" y="14" width="16" height="11" rx="2.5" class="body"/></svg>
+    <span>Marzaduri <b>Secure Messages</b></span>
+  </a>
+  <nav class="topnav">
+    <span class="badge">Cifratura end-to-end · AES-256</span>
+    <a class="studio-link" href="/verifica/">Verifica</a>
+    <a class="studio-link" href="https://marzaduri.com" rel="noopener">Studio Marzaduri ↗</a>
+  </nav>
+</header>
+
+<main>
+  <noscript><p class="error">Per cifrare e decifrare i messaggi nel tuo browser è necessario JavaScript.</p></noscript>
+
+  <!-- CREA -->
+  <section id="v-create" class="card">
+    <p class="eyebrow">Messaggi a lettura singola</p>
+    <h1>Una lettura.<br>Poi sparisce.</h1>
+    <p class="lead">Il testo viene cifrato nel tuo browser prima di partire. Al server arriva solo un blocco illeggibile: la chiave resta nel link che condividi. Alla prima apertura il messaggio viene cancellato per sempre.</p>
+
+    <form id="f-create" autocomplete="off">
+      <label for="msg">Messaggio</label>
+      <textarea id="msg" maxlength="20000" required spellcheck="false" placeholder="Password, codici, coordinate bancarie, dati riservati…"></textarea>
+      <div class="counter"><span id="count">0</span> / 20.000 caratteri</div>
+
+      <div class="row">
+        <div class="field">
+          <label for="ttl">Se nessuno lo apre, scade dopo</label>
+          <select id="ttl">
+            <option value="3600">1 ora</option>
+            <option value="86400" selected>24 ore</option>
+            <option value="604800">7 giorni</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pw">Password aggiuntiva <span class="opt">(facoltativa)</span></label>
+          <input id="pw" type="password" autocomplete="new-password" placeholder="Da comunicare a parte">
+        </div>
+      </div>
+
+      <p class="error" id="create-err" hidden></p>
+      <button class="primary" type="submit" id="btn-create">Cifra e genera il link</button>
+      <p class="terms">Usando il servizio accetti le <a href="/note-legali/#condizioni">condizioni d'uso</a>. Il gestore non può leggere i messaggi: <a href="/verifica/">verificalo tu</a>.</p>
+    </form>
+  </section>
+
+  <!-- LINK CREATO -->
+  <section id="v-created" class="card" hidden>
+    <p class="eyebrow ok">Messaggio cifrato</p>
+    <h1>Il link è pronto</h1>
+    <p class="lead">Invialo al destinatario. Funziona <b>una sola volta</b>.</p>
+    <div class="linkbox">
+      <input id="link" readonly aria-label="Link del messaggio">
+      <button type="button" id="btn-copy" class="primary small">Copia</button>
+    </div>
+    <p class="note warn" id="pw-note" hidden>Hai impostato una password: comunicala su un canale diverso da quello del link (es. link via e-mail, password per telefono).</p>
+    <ul class="facts">
+      <li>Se nessuno lo apre, viene eliminato il <b id="exp"></b>.</li>
+      <li>Il link non viene conservato da nessuna parte: se lo perdi, il messaggio è irrecuperabile.</li>
+      <li>Non aprirlo per controllarlo: la prima apertura lo distrugge.</li>
+    </ul>
+    <details class="server-box">
+      <summary>Guarda cosa ha ricevuto il server</summary>
+      <p>Questo è esattamente ciò che il tuo browser ha inviato. Il testo è un blocco cifrato illeggibile, e la chiave (la parte del link dopo il <code>#</code>) <b>non c'è</b>: senza di essa nessuno può decifrarlo, nemmeno il gestore del servizio.</p>
+      <pre id="server-view"></pre>
+      <p><a href="/verifica/">Come verificarlo da solo, senza fidarti di noi →</a></p>
+    </details>
+    <button type="button" class="ghost" id="btn-new">Scrivi un altro messaggio</button>
+  </section>
+
+  <!-- VERSIONE OFFLINE: APRI UN LINK RICEVUTO -->
+  <section id="v-paste" class="card paste" hidden>
+    <p class="eyebrow ok">Versione offline</p>
+    <h2>Hai ricevuto un link? Aprilo qui</h2>
+    <p>Stai usando la copia del programma salvata sul tuo computer. Incolla il link ricevuto: verrà decifrato da questo file, non dal codice del sito.</p>
+    <form id="f-paste" autocomplete="off">
+      <input id="paste-link" placeholder="https://marzadurisecure.com/m/…#…" aria-label="Link ricevuto">
+      <p class="error" id="paste-err" hidden></p>
+      <button class="primary" type="submit">Apri il messaggio</button>
+    </form>
+  </section>
+
+  <!-- LETTURA: CONFERMA -->
+  <section id="v-read" class="card" hidden>
+    <p class="eyebrow">Messaggio sicuro in arrivo</p>
+    <h1>Qualcuno ti ha inviato un messaggio riservato</h1>
+    <p class="lead">Verrà decifrato in questo browser e <b>cancellato dal server nel momento in cui lo apri</b>. Dopo non sarà più possibile rileggerlo.</p>
+    <form id="f-read" autocomplete="off">
+      <div class="field" id="read-pw-wrap" hidden>
+        <label for="read-pw">Il mittente ha protetto il messaggio con una password</label>
+        <input id="read-pw" type="password" autocomplete="off" placeholder="Password">
+      </div>
+      <p class="error" id="read-err" hidden></p>
+      <button class="primary danger" type="submit" id="btn-open">Apri e distruggi il messaggio</button>
+    </form>
+  </section>
+
+  <!-- LETTURA: MESSAGGIO -->
+  <section id="v-message" class="card" hidden>
+    <p class="eyebrow ok">Decifrato</p>
+    <h1>Messaggio</h1>
+    <p class="note burned">Il messaggio è già stato eliminato dal server. Questa è l'unica copia: chiudendo la pagina andrà persa.</p>
+    <pre id="plain"></pre>
+    <div class="actions">
+      <button type="button" class="primary small" id="btn-copy-msg">Copia testo</button>
+      <a class="ghost" href="/">Invia anche tu un messaggio sicuro</a>
+    </div>
+  </section>
+
+  <!-- NON DISPONIBILE -->
+  <section id="v-gone" class="card" hidden>
+    <p class="eyebrow bad">Non disponibile</p>
+    <h1 id="gone-title">Questo messaggio non esiste più</h1>
+    <p class="lead" id="gone-text"></p>
+    <a class="ghost" href="/">Scrivi un messaggio sicuro</a>
+  </section>
+
+  <section class="how" aria-labelledby="how-title">
+    <h2 id="how-title">Come funziona, in quattro passi</h2>
+    <ol>
+      <li><b>Scrivi il messaggio.</b> Inserisci il testo riservato e premi «Cifra e genera il link». Il tuo browser lo cifra prima che parta: su internet viaggia solo un blocco di caratteri illeggibili.</li>
+      <li><b>Invia il link al destinatario.</b> Copialo e mandalo come preferisci: WhatsApp, e-mail, SMS. Il link contiene la chiave per aprire il messaggio, quindi trattalo come il messaggio stesso e mandalo solo alla persona giusta.</li>
+      <li><b>Il destinatario lo apre.</b> Vede un avviso e decide quando leggerlo premendo «Apri e distruggi il messaggio». Il testo compare solo sul suo schermo. Le anteprime automatiche di WhatsApp, Telegram o della posta non lo consumano.</li>
+      <li><b>Il messaggio sparisce.</b> Nel momento in cui viene letto, è cancellato definitivamente. Se nessuno lo apre, si elimina da solo alla scadenza che hai scelto (1 ora, 24 ore o 7 giorni).</li>
+    </ol>
+  </section>
+
+  <section class="uses" aria-labelledby="uses-title">
+    <h2 id="uses-title">Quando usarlo</h2>
+    <ul class="chips">
+      <li>Password e codici di accesso</li>
+      <li>Coordinate bancarie e IBAN</li>
+      <li>Credenziali di lavoro o del Wi-Fi</li>
+      <li>Dati personali e sanitari</li>
+      <li>Informazioni riservate per clienti e avvocati</li>
+      <li>Tutto ciò che non deve restare in una chat o in una casella e-mail</li>
+    </ul>
+  </section>
+
+  <section class="tips" aria-labelledby="tips-title">
+    <h2 id="tips-title">Consigli per la massima sicurezza</h2>
+    <ul>
+      <li><b>Per le informazioni più delicate aggiungi una password</b> e comunicala per un'altra via (es. link via e-mail, password a voce o per SMS). Chi intercettasse il solo link non potrebbe leggere nulla.</li>
+      <li><b>Non aprire il link per controllarlo:</b> lo distruggeresti prima che arrivi al destinatario.</li>
+      <li><b>Se il destinatario trova «messaggio non esiste più» senza averlo mai aperto,</b> qualcun altro l'ha letto prima di lui. Consideralo compromesso e cambia subito ciò che conteneva (password, codici).</li>
+    </ul>
+  </section>
+
+  <section class="faq" aria-labelledby="faq-title">
+    <h2 id="faq-title">Domande frequenti</h2>
+    <details>
+      <summary>Voi potete leggere i miei messaggi?</summary>
+      <p>No. Il messaggio viene cifrato nel tuo browser con AES-256-GCM, e la chiave resta solo nel link, dopo il simbolo <code>#</code>: è una parte dell'indirizzo che i browser non inviano mai al server. Noi conserviamo un blocco cifrato che non possiamo aprire, e lo cancelliamo alla prima lettura. Non devi crederci sulla parola: nella pagina <a href="/verifica/">Verifica</a> trovi come controllarlo da solo, il codice pubblico, gli standard di riferimento e una versione del programma da usare offline.</p>
+    </details>
+    <details>
+      <summary>Due persone possono leggere lo stesso messaggio?</summary>
+      <p>No. La lettura e la cancellazione avvengono in un'unica operazione: anche se due persone aprono il link nello stesso istante, solo una riceve il messaggio.</p>
+    </details>
+    <details>
+      <summary>Ho perso il link, posso recuperare il messaggio?</summary>
+      <p>No. Il link non viene salvato da nessuna parte, nemmeno da noi: senza di esso il messaggio non è più decifrabile e si eliminerà alla scadenza. Basta scriverne uno nuovo.</p>
+    </details>
+    <details>
+      <summary>Cosa succede se qualcuno sbaglia la password?</summary>
+      <p>Ha 5 tentativi. Al quinto errore il messaggio viene distrutto, così nessuno può indovinare la password per tentativi.</p>
+    </details>
+    <details>
+      <summary>Serve registrarsi o installare qualcosa?</summary>
+      <p>No. Funziona da qualsiasi browser, su computer e telefono, senza account, senza app e senza cookie.</p>
+    </details>
+  </section>
+
+  <section class="about" aria-labelledby="about-title">
+    <div>
+      <h2 id="about-title">Un servizio di Studio Marzaduri</h2>
+      <p>Marzaduri Secure Messages è realizzato da Studio Marzaduri, che si occupa di informatica forense e cybersecurity.</p>
+    </div>
+    <a class="primary small" href="https://marzaduri.com" rel="noopener">Visita marzaduri.com</a>
+  </section>
+
+  <section class="verify-cta" aria-labelledby="vcta-title">
+    <h2 id="vcta-title">Non fidarti: verifica</h2>
+    <p>La sicurezza di un servizio come questo non deve dipendere dalla fiducia in chi lo gestisce. Per questo il codice è pubblico, ogni file ha un'impronta digitale controllabile e puoi usare il programma anche da una copia salvata sul tuo computer.</p>
+    <a class="ghost" href="/verifica/">Come verificare tutto da solo →</a>
+  </section>
+
+  <details class="legal">
+    <summary>Privacy e condizioni d'uso</summary>
+    <h3>Informativa privacy (art. 13 GDPR)</h3>
+    <p><b>Titolare del trattamento:</b> Marco Roberto Maria Marzaduri — e-mail <a href="mailto:privacy@marzadurisecure.com">privacy@marzadurisecure.com</a>, PEC marco@pec.marzaduri.it.</p>
+    <p><b>Contenuto dei messaggi.</b> È cifrato nel browser del mittente; il titolare non ha la chiave e non può leggerlo. Sul server restano solo il testo cifrato, un'impronta di verifica derivata dalla chiave, l'indicazione della presenza di una password e la data di scadenza. Questi dati vengono cancellati alla prima lettura, dopo 5 tentativi di password errati o alla scadenza (al più tardi entro un'ora dalla scadenza).</p>
+    <p><b>Dati di navigazione.</b> Il servizio è ospitato su Cloudflare, che tratta gli indirizzi IP per garantire la sicurezza e il funzionamento della rete. Il servizio non registra log applicativi, non usa cookie, né strumenti di analisi o di tracciamento.</p>
+    <p><b>Diritti.</b> Puoi esercitare i diritti degli artt. 15-22 GDPR scrivendo a privacy@marzadurisecure.com e proporre reclamo all'autorità di controllo dello Stato in cui risiedi o lavori (in Italia, il Garante per la protezione dei dati personali). I messaggi non letti non sono riconducibili a una persona e il titolare non è in grado di identificarli.</p>
+    <h3>Condizioni d'uso</h3>
+    <p>È vietato usare il servizio per trasmettere contenuti illeciti, minacce, molestie, materiale che violi diritti di terzi o per finalità fraudolente. Il servizio è fornito "così com'è": il mittente è responsabile di custodire il link e di inviarlo solo al destinatario corretto. Segnalazioni di abuso: <a href="mailto:abuse@marzadurisecure.com">abuse@marzadurisecure.com</a>. Condizioni complete, ruolo del gestore e procedura per le autorità: <a href="/note-legali/">Note legali e autorità</a>.</p>
+  </details>
+</main>
+
+<footer>
+  Un servizio di <a href="https://marzaduri.com" rel="noopener">Studio Marzaduri</a> · Informatica forense e cybersecurity<br>
+  <a href="/verifica/">Verifica</a> · <a href="/note-legali/">Note legali e autorità</a>
+</footer>
+<script src="/app.js" integrity="sha256-1T2ySAp2UM+vev+6YY8YjcS2HhMPI6sfhOXkfvjSYUs=" defer></script>
+</body>
+</html>

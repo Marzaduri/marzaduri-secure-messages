@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Note legali, ruolo del gestore e informazioni per le autorità | Marzaduri Secure Messages</title>
+<meta name="description" content="Ruolo del gestore di Marzaduri Secure Messages, dati tecnicamente disponibili, condizioni d'uso, segnalazione di abusi e procedura per le richieste delle autorità.">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0b0e12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e12'/%3E%3Cpath d='M11 14v-3a5 5 0 0 1 10 0v3' stroke='%2346e3a6' stroke-width='2.4' fill='none'/%3E%3Crect x='8' y='14' width='16' height='11' rx='2.5' fill='%2346e3a6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css" integrity="__SRI_CSS__">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/" aria-label="Marzaduri Secure Messages — home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 14v-3a5 5 0 0 1 10 0v3" class="shackle"/><rect x="8" y="14" width="16" height="11" rx="2.5" class="body"/></svg>
+    <span>Marzaduri <b>Secure Messages</b></span>
+  </a>
+  <nav class="topnav">
+    <a class="studio-link" href="/verifica/">Verifica</a>
+    <a class="studio-link" href="/">Scrivi un messaggio</a>
+  </nav>
+</header>
+
+<main class="doc">
+  <p class="eyebrow">Note legali</p>
+  <h1>Ruolo del gestore, condizioni d'uso e informazioni per le autorità</h1>
+  <p class="lead">Questa pagina spiega in modo chiaro, per gli utenti e per le autorità, che cosa il gestore di Marzaduri Secure Messages può e non può fare, quali dati esistono e come vengono gestite segnalazioni e richieste.</p>
+
+  <nav class="toc" aria-label="Indice">
+    <a href="#ruolo">Ruolo del gestore</a>
+    <a href="#tecnica">Cosa è tecnicamente possibile</a>
+    <a href="#dati">Dati esistenti</a>
+    <a href="#condizioni">Condizioni d'uso</a>
+    <a href="#abusi">Segnalare un abuso</a>
+    <a href="#autorita">Richieste delle autorità</a>
+  </nav>
+
+  <section id="ruolo">
+    <h2>1. Ruolo del gestore</h2>
+    <p>Il gestore mette a disposizione uno strumento tecnico che conserva temporaneamente dati <b>cifrati dagli utenti sul proprio dispositivo</b>. Il gestore non crea, non sceglie, non modifica e non conosce il contenuto dei messaggi, né i loro mittenti e destinatari.</p>
+    <p>Rispetto ai dati degli utenti, il servizio opera come prestatore di servizi di memorizzazione di informazioni (<i>hosting</i>) ai sensi dell'art. 6 del Regolamento (UE) 2022/2065 sui servizi digitali (DSA) e degli artt. 16 e 17 del D.Lgs. 70/2003. In base all'art. 8 del DSA, il prestatore non ha un obbligo generale di sorvegliare le informazioni che memorizza.</p>
+    <p class="note burned"><b>Ciascun utente è l'unico responsabile del contenuto dei messaggi che invia.</b> Non serve fidarsi del gestore: l'impossibilità di leggere i messaggi non dipende da una sua promessa, ma dal modo in cui il sistema è costruito, ed è verificabile da chiunque nella pagina <a href="/verifica/">Verifica</a>.</p>
+  </section>
+
+  <section id="tecnica">
+    <h2>2. Cosa il gestore può e non può fare, tecnicamente</h2>
+    <div class="limits">
+      <div><h3>Non può leggere i messaggi</h3>
+        <p>Il testo viene cifrato nel browser del mittente con AES-256-GCM. La chiave si trova solo nel link condiviso dal mittente, nella parte dopo il simbolo <code>#</code>, che i browser non trasmettono al server. Il gestore non possiede e non può ricavare la chiave. <a href="/verifica/#prove">Dimostrazione: prove 1-4</a>.</p></div>
+      <div><h3>Non può risalire a mittenti e destinatari</h3>
+        <p>Il servizio non richiede registrazione e non usa cookie (<a href="/verifica/#prove">dimostrabile: prova 5</a>). Il gestore dichiara inoltre di non registrare indirizzi IP né altri dati di navigazione: questa dichiarazione, come per qualunque servizio online, non è verificabile dall'esterno (prova 7). Il link, e quindi il destinatario, lo sceglie solo il mittente.</p></div>
+      <div><h3>Non può recuperare un messaggio già letto o scaduto</h3>
+        <p>Alla prima lettura il dato cifrato viene cancellato nella stessa operazione con cui viene consegnato; alla scadenza viene eliminato automaticamente (<a href="/verifica/#prove">prova 6</a>). Anche se ne esistesse una copia, sarebbe illeggibile senza la chiave, che il gestore non possiede (prova 3).</p></div>
+      <div><h3>Può cancellare un messaggio non ancora letto</h3>
+        <p>Se riceve l'identificativo di un messaggio (la parte del link tra <code>/m/</code> e <code>#</code>), il gestore può eliminarlo prima che venga letto. Anche in questo caso il contenuto resta illeggibile, a meno che chi segnala non fornisca il link completo.</p></div>
+    </div>
+  </section>
+
+  <section id="dati">
+    <h2>3. Dati che esistono sul server</h2>
+    <p>Per ogni messaggio non ancora letto né scaduto, il server conserva esclusivamente:</p>
+    <ul class="checks">
+      <li>il testo cifrato, illeggibile senza la chiave contenuta nel link;</li>
+      <li>un valore tecnico casuale necessario alla cifratura (IV);</li>
+      <li>un'impronta di verifica derivata dalla chiave, che non consente di decifrare;</li>
+      <li>l'indicazione della presenza di una password, la data di scadenza e il numero di tentativi di password errati.</li>
+    </ul>
+    <p>Il servizio non chiede né riceve nomi, indirizzi e-mail o numeri di telefono, e non usa cookie. Il codice pubblico del servizio non contiene registrazioni di indirizzi IP o di accessi. Il servizio è ospitato sulla rete Cloudflare, che tratta gli indirizzi IP delle connessioni per finalità di sicurezza secondo le proprie politiche.</p>
+  </section>
+
+  <section id="condizioni">
+    <h2>4. Condizioni d'uso</h2>
+    <p>Usando il servizio l'utente accetta queste condizioni.</p>
+    <ul class="steps">
+      <li>Il servizio serve a trasmettere in modo riservato informazioni lecite, come credenziali, codici, dati personali o professionali.</li>
+      <li>È vietato usarlo per trasmettere contenuti illeciti, minacce, molestie, materiale pedopornografico, contenuti che incitano alla violenza o all'odio, truffe, phishing, malware o materiale che violi diritti di terzi.</li>
+      <li>L'utente è l'unico responsabile del contenuto che cifra e invia, e della scelta dei destinatari ai quali consegna il link.</li>
+      <li>Il gestore può limitare l'uso del servizio (per esempio con limiti al numero di messaggi) per prevenire abusi, e può cancellare i messaggi segnalati come illeciti.</li>
+      <li>Il servizio è fornito «così com'è», senza garanzia di disponibilità continua. Il mittente è responsabile di custodire il link.</li>
+    </ul>
+  </section>
+
+  <section id="abusi">
+    <h2>5. Segnalare un abuso</h2>
+    <p>Chiunque riceva tramite il servizio un contenuto illecito può segnalarlo a <a href="mailto:abuse@marzadurisecure.com">abuse@marzadurisecure.com</a> (meccanismo di segnalazione ai sensi dell'art. 16 DSA). Indica nella segnalazione:</p>
+    <ul class="steps">
+      <li>il link ricevuto, se il messaggio non è ancora stato aperto, oppure la descrizione del contenuto se è già stato letto;</li>
+      <li>perché ritieni il contenuto illecito;</li>
+      <li>un recapito per eventuali comunicazioni.</li>
+    </ul>
+    <p>I messaggi segnalati e ancora presenti vengono eliminati. Per i reati è sempre possibile, e consigliato, rivolgersi direttamente alla Polizia Postale (<a href="https://www.commissariatodips.it" rel="noopener">commissariatodips.it</a>) o all'autorità giudiziaria, conservando il link e il contenuto ricevuto.</p>
+  </section>
+
+  <section id="autorita">
+    <h2>6. Richieste delle autorità</h2>
+    <p>Il gestore collabora con l'autorità giudiziaria e con le forze di polizia nei limiti di quanto tecnicamente possibile. Le richieste e gli ordini, anche ai sensi degli artt. 9 e 10 del DSA, vanno inviati al punto di contatto:</p>
+    <p class="note burned">PEC: <b>marco@pec.marzaduri.it</b> · e-mail: <a href="mailto:abuse@marzadurisecure.com">abuse@marzadurisecure.com</a> · lingue: italiano, inglese</p>
+    <p>Per ragioni tecniche, descritte ai punti 2 e 3, il gestore <b>non è in grado</b> di fornire il contenuto in chiaro dei messaggi, né dati identificativi di mittenti o destinatari, perché non li possiede. Può invece:</p>
+    <ul class="checks">
+      <li>confermare se un messaggio, indicato con il suo identificativo, è ancora presente o è già stato letto o è scaduto;</li>
+      <li>eliminarne o conservarne il dato cifrato, se ancora presente, secondo quanto disposto dall'autorità;</li>
+      <li>fornire il dato cifrato ancora presente, che l'autorità potrà decifrare solo se in possesso del link completo.</li>
+    </ul>
+    <p>Il funzionamento descritto in questa pagina è verificabile da qualsiasi consulente tecnico tramite il codice pubblico e le impronte dei file, come spiegato nella pagina <a href="/verifica/">Verifica</a>.</p>
+  </section>
+
+  <p class="small-print">Gestore del servizio e titolare del trattamento: Marco Roberto Maria Marzaduri — <a href="mailto:privacy@marzadurisecure.com">privacy@marzadurisecure.com</a>. Riferimenti: Regolamento (UE) 2022/2065 (DSA), artt. 6, 8, 9, 10, 16; D.Lgs. 9 aprile 2003, n. 70, artt. 16 e 17; Regolamento (UE) 2016/679 (GDPR).</p>
+</main>
+
+<footer>
+  Un servizio di <a href="https://marzaduri.com" rel="noopener">Studio Marzaduri</a> · <a href="/verifica/">Verifica</a> · <a href="/">Scrivi un messaggio sicuro</a>
+</footer>
+</body>
+</html>
